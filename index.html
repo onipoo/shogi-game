@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>将棋AI対戦 | 古里将棋</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>古里将棋AI</h1>
+    <p>先手（あなた）vs 後手（AI）</p>
+  </header>
+
+  <main>
+    <!-- 後手（AI）の持ち駒 -->
+    <div class="hands-row">
+      <span class="hands-label">後手持駒</span>
+      <div id="white-hands" class="hands"></div>
+    </div>
+
+    <!-- 将棋盤 -->
+    <div id="board-area">
+      <div id="col-labels">
+        <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span>
+        <span>4</span><span>3</span><span>2</span><span>1</span>
+      </div>
+      <div id="board-inner">
+        <div id="board"></div>
+        <div id="row-labels">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span>
+          <span>六</span><span>七</span><span>八</span><span>九</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 先手（あなた）の持ち駒 -->
+    <div class="hands-row">
+      <span class="hands-label">先手持駒</span>
+      <div id="black-hands" class="hands"></div>
+    </div>
+
+    <div id="turn-indicator">あなたの番です</div>
+
+    <!-- 棋譜 -->
+    <div id="kifu-area">
+      <div id="kifu-log"></div>
+    </div>
+
+    <button id="reset-btn">リセット</button>
+  </main>
+
+  <!-- 成り確認ダイアログ -->
+  <div id="promotion-dialog" class="dialog-overlay" style="display:none">
+    <div class="dialog">
+      <p>成りますか？</p>
+      <button id="promote-yes">成る</button>
+      <button id="promote-no">成らない</button>
+    </div>
+  </div>
+
+  <!-- ゲーム終了ダイアログ -->
+  <div id="game-over-dialog" class="dialog-overlay" style="display:none">
+    <div class="dialog">
+      <p id="winner-text"></p>
+      <button id="play-again-btn">もう一度</button>
+    </div>
+  </div>
+
+  <script src="board.js"></script>
+  <script src="ai.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>

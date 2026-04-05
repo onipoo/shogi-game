@@ -1,0 +1,308 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  background: #FDF3E3;
+  color: #3E1F00;
+}
+
+header {
+  background: #8B4513;
+  color: #FFF8EF;
+  padding: 0.9rem 2rem;
+  text-align: center;
+  border-bottom: 3px solid #D2691E;
+}
+
+header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.2rem;
+  letter-spacing: 0.1em;
+}
+
+header p {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+main {
+  max-width: 600px;
+  margin: 1rem auto;
+  padding: 0 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* 持ち駒エリア */
+.hands-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+}
+
+.hands-label {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #8B4513;
+  white-space: nowrap;
+  min-width: 4em;
+}
+
+.hands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  flex: 1;
+  background: #F5DEB3;
+  border: 1px solid #C8A060;
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+  min-height: 38px;
+  font-size: 0.85rem;
+  color: #6B3A10;
+}
+
+.hand-piece {
+  display: inline-block;
+  padding: 2px 6px;
+  border: 1px solid #A0784A;
+  border-radius: 3px;
+  background: #FDFAF0;
+  font-size: 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.hand-piece:hover {
+  background: #FFD080;
+}
+
+.hand-piece.selected {
+  background: #FFB347;
+  border-color: #E07000;
+}
+
+#white-hands .hand-piece {
+  transform: rotate(180deg);
+  cursor: default;
+}
+
+/* 将棋盤エリア */
+#board-area {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+#col-labels {
+  display: grid;
+  grid-template-columns: repeat(9, 52px);
+  margin-bottom: 2px;
+}
+
+#col-labels span {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #7A4F2A;
+}
+
+#board-inner {
+  display: flex;
+  align-items: flex-start;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(9, 52px);
+  grid-template-rows: repeat(9, 52px);
+  border: 2px solid #6B3A10;
+  background: #E8C880;
+}
+
+.cell {
+  width: 52px;
+  height: 52px;
+  border: 1px solid #A07840;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #E8C880;
+  transition: background 0.1s;
+  position: relative;
+}
+
+.cell:hover {
+  background: #D4A840;
+}
+
+.cell.selected {
+  background: #FFD060 !important;
+  border-color: #E07000;
+}
+
+.cell.legal {
+  background: #C8E890;
+}
+
+.cell.legal::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(60, 160, 0, 0.35);
+}
+
+.cell.legal:hover {
+  background: #A8D060;
+}
+
+/* 駒 */
+.piece {
+  font-size: 1.25rem;
+  font-weight: bold;
+  line-height: 1;
+  user-select: none;
+  display: block;
+  text-align: center;
+}
+
+.black-piece {
+  color: #1A0A00;
+}
+
+.white-piece {
+  color: #1A0A00;
+  transform: rotate(180deg);
+}
+
+.promoted {
+  color: #C01800;
+}
+
+/* 段ラベル */
+#row-labels {
+  display: flex;
+  flex-direction: column;
+  margin-left: 3px;
+}
+
+#row-labels span {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #7A4F2A;
+}
+
+/* ターン表示 */
+#turn-indicator {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #8B4513;
+  margin-top: 0.3rem;
+}
+
+/* 棋譜 */
+#kifu-area {
+  width: 100%;
+}
+
+#kifu-log {
+  width: 100%;
+  max-height: 80px;
+  overflow-y: auto;
+  background: #FDFAF0;
+  border: 1px solid #C8A060;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #5A3010;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+/* リセットボタン */
+#reset-btn {
+  background: #8B4513;
+  color: #FFF8EF;
+  border: none;
+  padding: 0.5rem 2rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 0.3rem;
+  transition: background 0.15s;
+}
+
+#reset-btn:hover {
+  background: #A0522D;
+}
+
+/* ダイアログ */
+.dialog-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(60, 20, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  background: #FDFAF0;
+  padding: 2rem 2.5rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(100, 40, 0, 0.35);
+  border: 2px solid #C8A060;
+}
+
+.dialog p {
+  font-size: 1.2rem;
+  margin-bottom: 1.2rem;
+  color: #3E1F00;
+}
+
+.dialog button {
+  margin: 0 0.5rem;
+  padding: 0.5rem 1.6rem;
+  font-size: 1rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.dialog button:hover {
+  opacity: 0.85;
+}
+
+#promote-yes, #play-again-btn {
+  background: #8B4513;
+  color: #FFF8EF;
+}
+
+#promote-no {
+  background: #C8A060;
+  color: #3E1F00;
+}
+
+#winner-text {
+  font-size: 1.4rem !important;
+  font-weight: bold;
+  color: #8B4513;
+}
