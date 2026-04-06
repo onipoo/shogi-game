@@ -20,6 +20,7 @@ function init() {
 
 function resetGame() {
   initBoard();
+  resetHistory(); // AIの履歴テーブルをリセット
   selectedSquare = null;
   selectedHandPiece = null;
   pendingPromotion = null;

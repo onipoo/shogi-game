@@ -8,14 +8,19 @@
 </head>
 <body>
   <header>
+    <div class="header-deco">─────◈─────</div>
     <h1>古里将棋AI</h1>
-    <p>先手（あなた）vs 後手（AI）</p>
+    <div class="header-deco">─────◈─────</div>
+    <p class="header-sub">先手（あなた）vs 後手（AI）</p>
   </header>
 
   <main>
-    <!-- 後手（AI）の持ち駒 -->
-    <div class="hands-row">
-      <span class="hands-label">後手持駒</span>
+    <!-- 後手（AI）持ち駒：左上 -->
+    <div id="white-side">
+      <div class="player-info white-info">
+        <span class="player-name">後手（AI）</span>
+        <span class="hands-label">持駒</span>
+      </div>
       <div id="white-hands" class="hands"></div>
     </div>
 
@@ -34,10 +39,13 @@
       </div>
     </div>
 
-    <!-- 先手（あなた）の持ち駒 -->
-    <div class="hands-row">
-      <span class="hands-label">先手持駒</span>
+    <!-- 先手（あなた）持ち駒：右下 -->
+    <div id="black-side">
       <div id="black-hands" class="hands"></div>
+      <div class="player-info black-info">
+        <span class="hands-label">持駒</span>
+        <span class="player-name">先手（あなた）</span>
+      </div>
     </div>
 
     <div id="turn-indicator">あなたの番です</div>
@@ -68,6 +76,7 @@
   </div>
 
   <script src="board.js"></script>
+  <script src="opening.js"></script>
   <script src="ai.js"></script>
   <script src="ui.js"></script>
 </body>
