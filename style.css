@@ -6,14 +6,8 @@
 
 body {
   font-family: 'Noto Sans JP', 'Yu Mincho', '游明朝', serif;
-  background: #F2ECD8;
-  /* 和紙風の微細なテクスチャ */
-  background-image:
-    repeating-linear-gradient(
-      0deg, transparent, transparent 3px,
-      rgba(180,160,100,0.07) 3px, rgba(180,160,100,0.07) 4px
-    );
-  color: #2A1800;
+  background: #1A0E05;
+  color: #E8D5B0;
   min-height: 100vh;
 }
 
@@ -95,7 +89,7 @@ main {
 .player-name {
   font-size: 0.85rem;
   font-weight: bold;
-  color: #5A3010;
+  color: #D4B870;
   letter-spacing: 0.05em;
 }
 
@@ -125,16 +119,16 @@ main {
 }
 
 .hand-piece {
-  display: inline-block;
-  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
   border: 1px solid #9A6830;
   border-radius: 2px;
   background: #FDFAF0;
-  font-size: 1rem;
   cursor: pointer;
   user-select: none;
   transition: background 0.1s;
-  font-family: 'Noto Sans JP', 'Yu Mincho', serif;
 }
 
 .hand-piece:hover {
@@ -147,8 +141,21 @@ main {
   box-shadow: 0 0 4px rgba(200,120,0,0.5);
 }
 
+.hand-piece-img {
+  width: 30px;
+  height: 30px;
+  display: block;
+  pointer-events: none;
+}
+
+.hand-piece-count {
+  font-size: 0.75rem;
+  color: #4A2808;
+  font-family: sans-serif;
+  min-width: 14px;
+}
+
 #white-hands .hand-piece {
-  transform: rotate(180deg);
   cursor: default;
 }
 
@@ -168,7 +175,7 @@ main {
 #col-labels span {
   text-align: center;
   font-size: 0.75rem;
-  color: #6A4020;
+  color: #C8A860;
   font-family: sans-serif;
 }
 
@@ -181,27 +188,47 @@ main {
   display: grid;
   grid-template-columns: repeat(9, 52px);
   grid-template-rows: repeat(9, 52px);
-  border: 2px solid #5A3008;
-  box-shadow: 3px 3px 10px rgba(60,30,0,0.4);
-  background: #DCB870;
+  border: 3px solid #3A1800;
+  box-shadow:
+    2px 2px 0 #9A6020,
+    4px 4px 0 #7A4010,
+    6px 6px 0 #5A2800,
+    8px 8px 22px rgba(0,0,0,0.9);
+  background: #C8963A;
 }
 
 .cell {
   width: 52px;
   height: 52px;
-  border: 1px solid #9A7030;
+  border: 1px solid #8B5A18;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  background: #DCB870;
+  background: #C8963A;
   transition: background 0.1s;
   position: relative;
 }
 
 .cell:hover {
-  background: #C89A40;
+  background: #B07830;
 }
+
+/* 盤の星（目印）：各セルの外側の角 = 線の交点 */
+.cell.star::before {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3A1800;
+  pointer-events: none;
+  z-index: 3;
+}
+.cell.star-tl::before { top:    -3.5px; left:  -3.5px; }
+.cell.star-tr::before { top:    -3.5px; right: -3.5px; }
+.cell.star-bl::before { bottom: -3.5px; left:  -3.5px; }
+.cell.star-br::before { bottom: -3.5px; right: -3.5px; }
 
 .cell.selected {
   background: #FFD040 !important;
@@ -226,28 +253,13 @@ main {
   background: #90C050;
 }
 
-/* ===== 駒 ===== */
-.piece {
-  font-size: 1.3rem;
-  font-weight: bold;
-  line-height: 1;
-  user-select: none;
+/* ===== 駒（Lishogi SVG画像） ===== */
+.piece-img {
+  width: 46px;
+  height: 46px;
   display: block;
-  text-align: center;
-  font-family: 'Noto Sans JP', 'Yu Mincho', serif;
-}
-
-.black-piece {
-  color: #120800;
-}
-
-.white-piece {
-  color: #120800;
-  transform: rotate(180deg);
-}
-
-.promoted {
-  color: #B80000;
+  user-select: none;
+  pointer-events: none;
 }
 
 /* ===== 段ラベル ===== */
@@ -262,7 +274,7 @@ main {
   display: flex;
   align-items: center;
   font-size: 0.75rem;
-  color: #6A4020;
+  color: #C8A860;
 }
 
 /* ===== ターン表示 ===== */

@@ -1,5 +1,14 @@
 'use strict';
 
+// === Lishogi SVG駒画像 ===
+const PIECE_BASE = 'https://raw.githubusercontent.com/WandererXII/lishogi/master/ui/%40build/pieces/assets/standard/ryoko_1kanji/';
+// 駒定数 → SVGファイルコード（OU=8はGYを使用）
+const SVG_CODE = ['','FU','KY','KE','GI','KI','KA','HI','GY','TO','NY','NK','NG','UM','RY'];
+
+function pieceImgSrc(absP, isBlack) {
+  return `${PIECE_BASE}${isBlack ? '0' : '1'}${SVG_CODE[absP]}.svg`;
+}
+
 let selectedSquare = null;    // クリックで選択した盤上のマス {row, col}
 let selectedHandPiece = null; // クリックで選択した持ち駒の種類（数値）
 let legalMovesCache = [];     // 先手の合法手リスト（毎ターン更新）
@@ -48,15 +57,22 @@ function renderBoard() {
       const cell = document.createElement('div');
       cell.className = 'cell';
 
+      // 盤の星（目印）：セル(4,4)(4,6)(6,4)(6,6)の外側の角（1始まり）
+      const starDirs = { '3,3':'tl', '3,5':'tr', '5,3':'bl', '5,5':'br' };
+      const starDir = starDirs[`${r},${c}`];
+      if (starDir) {
+        cell.classList.add('star', `star-${starDir}`);
+      }
+
       const piece = board[r][c];
       if (piece !== 0) {
         const absP = Math.abs(piece);
-        const span = document.createElement('span');
-        span.textContent = PIECE_CHAR[absP];
-        let cls = piece > 0 ? 'piece black-piece' : 'piece white-piece';
-        if (absP >= 9) cls += ' promoted'; // 成り駒は赤表示
-        span.className = cls;
-        cell.appendChild(span);
+        const isBlack = piece > 0;
+        const img = document.createElement('img');
+        img.src = pieceImgSrc(absP, isBlack);
+        img.className = 'piece-img';
+        img.draggable = false;
+        cell.appendChild(img);
       }
 
       // 選択・合法手ハイライト
@@ -203,7 +219,20 @@ function renderHandArea(player, container) {
     hasAny = true;
     const el = document.createElement('span');
     el.className = 'hand-piece';
-    el.textContent = PIECE_CHAR[p] + (hand[p] > 1 ? ` ×${hand[p]}` : '');
+
+    const img = document.createElement('img');
+    img.src = pieceImgSrc(p, player === 'black');
+    img.className = 'hand-piece-img';
+    img.draggable = false;
+    el.appendChild(img);
+
+    if (hand[p] > 1) {
+      const cnt = document.createElement('span');
+      cnt.className = 'hand-piece-count';
+      cnt.textContent = `×${hand[p]}`;
+      el.appendChild(cnt);
+    }
+
     if (player === 'black') {
       el.addEventListener('click', () => handleHandClick(p));
       if (selectedHandPiece === p) el.classList.add('selected');
