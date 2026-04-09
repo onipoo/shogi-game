@@ -2,11 +2,12 @@
 
 // === 棋譜再生モジュール（KIF形式対応）===
 
-let replayMode      = false;
-let replayParsedMoves = [];  // パース済み手の配列
-let replaySnapshots   = [];  // 各手数のスナップショット（0=初期局面）
-let replayAllLabels   = [];  // 全手の棋譜ラベル（先読み生成）
-let replayIndex       = 0;   // 現在の手数（0=初期局面）
+let replayMode        = false;
+let replayParsedMoves = [];
+let replaySnapshots   = [];
+let replayAllLabels   = [];
+let replayIndex       = 0;
+let replaySavedNames  = null; // 入場時に保存したプレイヤー名・サブタイトル
 
 // --- KIFパーサー ---
 function parseKIF(text) {
@@ -121,35 +122,17 @@ function toInternalMove(km) {
 }
 
 // --- ナビゲーション ---
-function replayNext() {
-  if (replayIndex >= replayParsedMoves.length) return;
-  replayIndex++;
+function replayGoTo(index) {
+  replayIndex = index;
   restoreSnapshot(replaySnapshots[replayIndex]);
   updateReplayUI();
   renderAll();
 }
 
-function replayPrev() {
-  if (replayIndex <= 0) return;
-  replayIndex--;
-  restoreSnapshot(replaySnapshots[replayIndex]);
-  updateReplayUI();
-  renderAll();
-}
-
-function replayFirst() {
-  replayIndex = 0;
-  restoreSnapshot(replaySnapshots[0]);
-  updateReplayUI();
-  renderAll();
-}
-
-function replayLast() {
-  replayIndex = replayParsedMoves.length;
-  restoreSnapshot(replaySnapshots[replayIndex]);
-  updateReplayUI();
-  renderAll();
-}
+function replayNext()  { if (replayIndex < replayParsedMoves.length) replayGoTo(replayIndex + 1); }
+function replayPrev()  { if (replayIndex > 0)                        replayGoTo(replayIndex - 1); }
+function replayFirst() { replayGoTo(0); }
+function replayLast()  { replayGoTo(replayParsedMoves.length); }
 
 // --- UIの更新 ---
 function updateReplayUI() {
@@ -166,6 +149,12 @@ function updateReplayUI() {
   document.getElementById('replay-last-btn').disabled  = cur >= total;
 }
 
+function setReplayUIVisible(entering) {
+  document.getElementById('replay-input-section').style.display = entering ? 'none' : 'flex';
+  document.getElementById('replay-controls').style.display      = entering ? 'flex' : 'none';
+  document.getElementById('reset-btn').style.display            = entering ? 'none' : '';
+}
+
 // --- 再生モード開始 ---
 function enterReplayMode(parsedMoves) {
   replayMode        = true;
@@ -174,9 +163,8 @@ function enterReplayMode(parsedMoves) {
   replayIndex       = 0;
 
   initBoard();
-  replaySnapshots = [snapshotState()]; // index 0 = 初期局面
+  replaySnapshots = [snapshotState()];
 
-  // 全スナップショットと棋譜ラベルを先読み生成
   for (let i = 0; i < parsedMoves.length; i++) {
     const move = toInternalMove(parsedMoves[i]);
     applyMove(move);
@@ -184,20 +172,19 @@ function enterReplayMode(parsedMoves) {
     replaySnapshots.push(snapshotState());
   }
 
-  // 初期局面に戻す
   restoreSnapshot(replaySnapshots[0]);
-  replayIndex = 0;
 
-  // プレイヤー名・サブタイトルを再生モード用に変更
-  document.querySelectorAll('.player-name').forEach(el => {
-    el.textContent = el.textContent.replace('（あなた）', '').replace('（AI）', '');
-  });
+  // プレイヤー名・サブタイトルを保存してから変更
+  replaySavedNames = {
+    white:  document.querySelector('#white-side .player-name').textContent,
+    black:  document.querySelector('#black-side .player-name').textContent,
+    header: document.querySelector('.header-sub').textContent,
+  };
+  document.querySelector('#white-side .player-name').textContent = '後手';
+  document.querySelector('#black-side .player-name').textContent = '先手';
   document.querySelector('.header-sub').textContent = '棋譜再生';
 
-  document.getElementById('replay-input-section').style.display = 'none';
-  document.getElementById('replay-controls').style.display      = 'flex';
-  document.getElementById('reset-btn').style.display            = 'none';
-
+  setReplayUIVisible(true);
   updateReplayUI();
   renderAll();
 }
@@ -218,20 +205,18 @@ function exitReplayMode() {
   replayAllLabels   = [];
   replayIndex       = 0;
 
-  // 反転を解除
   boardFlipped = false;
   document.querySelector('main').classList.remove('flipped');
   document.getElementById('flip-btn').classList.remove('active');
 
-  // プレイヤー名・サブタイトルを元に戻す
-  document.querySelector('#white-side .player-name').textContent = '後手（AI）';
-  document.querySelector('#black-side .player-name').textContent = '先手（あなた）';
-  document.querySelector('.header-sub').textContent = '先手（あなた）vs 後手（AI）';
+  if (replaySavedNames) {
+    document.querySelector('#white-side .player-name').textContent = replaySavedNames.white;
+    document.querySelector('#black-side .player-name').textContent = replaySavedNames.black;
+    document.querySelector('.header-sub').textContent = replaySavedNames.header;
+    replaySavedNames = null;
+  }
 
-  document.getElementById('replay-input-section').style.display = 'flex';
-  document.getElementById('replay-controls').style.display      = 'none';
-  document.getElementById('reset-btn').style.display            = '';
-
+  setReplayUIVisible(false);
   resetGame();
 }
 
