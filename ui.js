@@ -14,6 +14,7 @@ let selectedHandPiece = null; // クリックで選択した持ち駒の種類�
 let legalMovesCache = [];     // 先手の合法手リスト（毎ターン更新）
 let pendingPromotion = null;  // 成り確認待ち {promMove, noPromMove}
 let aiThinking = false;
+let boardFlipped = false;     // 盤面反転フラグ（後手目線）
 
 // === 初期化 ===
 function init() {
@@ -52,16 +53,43 @@ function renderBoard() {
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
 
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
+  // 列ラベル更新
+  const colLabels = document.getElementById('col-labels');
+  colLabels.innerHTML = '';
+  for (let ci = 0; ci < 9; ci++) {
+    const span = document.createElement('span');
+    const actualCol = boardFlipped ? ci : (8 - ci);
+    span.textContent = actualCol + 1;
+    colLabels.appendChild(span);
+  }
+
+  // 段ラベル更新
+  const rowLabels = document.getElementById('row-labels');
+  rowLabels.innerHTML = '';
+  const ROW_KANJI = ['一','二','三','四','五','六','七','八','九'];
+  for (let ri = 0; ri < 9; ri++) {
+    const span = document.createElement('span');
+    span.textContent = ROW_KANJI[boardFlipped ? (8 - ri) : ri];
+    rowLabels.appendChild(span);
+  }
+
+  const flipDir = { tl:'br', tr:'bl', bl:'tr', br:'tl' };
+
+  for (let ri = 0; ri < 9; ri++) {
+    for (let ci = 0; ci < 9; ci++) {
+      // 反転時は盤座標を逆順にマッピング
+      const r = boardFlipped ? (8 - ri) : ri;
+      const c = boardFlipped ? (8 - ci) : ci;
+
       const cell = document.createElement('div');
       cell.className = 'cell';
 
-      // 盤の星（目印）：セル(4,4)(4,6)(6,4)(6,6)の外側の角（1始まり）
+      // 盤の星（目印）
       const starDirs = { '3,3':'tl', '3,5':'tr', '5,3':'bl', '5,5':'br' };
       const starDir = starDirs[`${r},${c}`];
       if (starDir) {
-        cell.classList.add('star', `star-${starDir}`);
+        const dir = boardFlipped ? flipDir[starDir] : starDir;
+        cell.classList.add('star', `star-${dir}`);
       }
 
       const piece = board[r][c];
@@ -69,7 +97,8 @@ function renderBoard() {
         const absP = Math.abs(piece);
         const isBlack = piece > 0;
         const img = document.createElement('img');
-        img.src = pieceImgSrc(absP, isBlack);
+        // 反転時は駒の向きも反転
+        img.src = pieceImgSrc(absP, boardFlipped ? !isBlack : isBlack);
         img.className = 'piece-img';
         img.draggable = false;
         cell.appendChild(img);
@@ -107,7 +136,7 @@ function isLegalTarget(r, c) {
 
 // === マスのクリック処理 ===
 function handleCellClick(r, c) {
-  if (currentPlayer !== 'black' || aiThinking || gameOver || pendingPromotion) return;
+  if (replayMode || currentPlayer !== 'black' || aiThinking || gameOver || pendingPromotion) return;
 
   const piece = board[r][c];
 
@@ -210,18 +239,16 @@ function renderHands() {
 function renderHandArea(player, container) {
   container.innerHTML = '';
   const hand = hands[player];
-  let hasAny = false;
 
   // 持ち駒の表示順（飛・角・金・銀・桂・香・歩）
   const order = [HI, KA, KI, GI, KE, KY, FU];
   for (const p of order) {
     if (hand[p] === 0) continue;
-    hasAny = true;
     const el = document.createElement('span');
     el.className = 'hand-piece';
 
     const img = document.createElement('img');
-    img.src = pieceImgSrc(p, player === 'black');
+    img.src = pieceImgSrc(p, boardFlipped ? player !== 'black' : player === 'black');
     img.className = 'hand-piece-img';
     img.draggable = false;
     el.appendChild(img);
@@ -240,12 +267,11 @@ function renderHandArea(player, container) {
     container.appendChild(el);
   }
 
-  if (!hasAny) container.textContent = 'なし';
 }
 
 // === 持ち駒クリック処理 ===
 function handleHandClick(piece) {
-  if (currentPlayer !== 'black' || aiThinking || gameOver || pendingPromotion) return;
+  if (replayMode || currentPlayer !== 'black' || aiThinking || gameOver || pendingPromotion) return;
   selectedHandPiece = (selectedHandPiece === piece) ? null : piece;
   selectedSquare = null;
   renderAll();
@@ -254,8 +280,21 @@ function handleHandClick(piece) {
 // === 棋譜の描画 ===
 function renderKifu() {
   const el = document.getElementById('kifu-log');
-  el.textContent = kifuLog.join('　');
-  el.scrollTop = el.scrollHeight;
+  if (replayMode && replayAllLabels.length > 0) {
+    // 再生モード：全手を1行ずつ表示し、現在の手をハイライト
+    el.innerHTML = replayAllLabels.map((label, i) => {
+      const cls = (i === replayIndex - 1) ? ' class="kifu-current"' : '';
+      return `<div${cls}>${i + 1} ${label}</div>`;
+    }).join('');
+    const cur = el.querySelector('.kifu-current');
+    if (cur) cur.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  } else {
+    // 対局モード：指した手を1行ずつ表示
+    el.innerHTML = kifuLog.map((label, i) =>
+      `<div>${i + 1} ${label}</div>`
+    ).join('');
+    el.scrollTop = el.scrollHeight;
+  }
 }
 
 // === ゲーム終了表示 ===

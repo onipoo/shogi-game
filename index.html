@@ -15,47 +15,66 @@
   </header>
 
   <main>
-    <!-- 後手（AI）持ち駒：左上 -->
-    <div id="white-side">
-      <div class="player-info white-info">
-        <span class="player-name">後手（AI）</span>
-        <span class="hands-label">持駒</span>
-      </div>
-      <div id="white-hands" class="hands"></div>
-    </div>
+    <!-- 左：盤面エリア -->
+    <div id="content-area">
+      <!-- 後手持ち駒（左） + 将棋盤（中央） + 先手持ち駒（右） -->
+      <div id="game-area">
+        <!-- 後手（AI）持ち駒：左 -->
+        <div id="white-side">
+          <span class="player-name">後手（AI）</span>
+          <div id="white-hands" class="hands"></div>
+        </div>
 
-    <!-- 将棋盤 -->
-    <div id="board-area">
-      <div id="col-labels">
-        <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span>
-        <span>4</span><span>3</span><span>2</span><span>1</span>
+        <!-- 将棋盤：中央 -->
+        <div id="board-area">
+          <div id="col-labels">
+            <span>9</span><span>8</span><span>7</span><span>6</span><span>5</span>
+            <span>4</span><span>3</span><span>2</span><span>1</span>
+          </div>
+          <div id="board-inner">
+            <div id="board"></div>
+            <div id="row-labels">
+              <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span>
+              <span>六</span><span>七</span><span>八</span><span>九</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 先手（あなた）持ち駒：右 -->
+        <div id="black-side">
+          <div id="black-hands" class="hands"></div>
+          <span class="player-name">先手（あなた）</span>
+        </div>
       </div>
-      <div id="board-inner">
-        <div id="board"></div>
-        <div id="row-labels">
-          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span>
-          <span>六</span><span>七</span><span>八</span><span>九</span>
+
+      <div id="turn-indicator">あなたの番です</div>
+
+      <button id="reset-btn">リセット</button>
+
+      <!-- 棋譜再生エリア -->
+      <div id="replay-area">
+        <div id="replay-input-section">
+          <div class="replay-section-title">棋譜再生（KIF形式）</div>
+          <textarea id="kifu-input" placeholder="KIF形式の棋譜をここにペーストしてください&#10;例：&#10;1 ７六歩(77)&#10;2 ３四歩(34)&#10;3 ２六歩(27)"></textarea>
+          <button id="load-kifu-btn">読み込む</button>
+        </div>
+        <div id="replay-controls" style="display:none">
+          <span id="replay-counter">0 / 0手</span>
+          <button id="replay-first-btn" title="最初へ">|◀</button>
+          <button id="replay-prev-btn"  title="前の手">◀</button>
+          <button id="replay-next-btn"  title="次の手">▶</button>
+          <button id="replay-last-btn"  title="最後へ">▶|</button>
+          <button id="flip-btn">反転表示</button>
+          <button id="replay-exit-btn">対局に戻る</button>
         </div>
       </div>
     </div>
 
-    <!-- 先手（あなた）持ち駒：右下 -->
-    <div id="black-side">
-      <div id="black-hands" class="hands"></div>
-      <div class="player-info black-info">
-        <span class="hands-label">持駒</span>
-        <span class="player-name">先手（あなた）</span>
-      </div>
-    </div>
-
-    <div id="turn-indicator">あなたの番です</div>
-
-    <!-- 棋譜 -->
+    <!-- 右：棋譜パネル -->
     <div id="kifu-area">
+      <div class="kifu-panel-title">棋譜</div>
       <div id="kifu-log"></div>
     </div>
-
-    <button id="reset-btn">リセット</button>
   </main>
 
   <!-- 成り確認ダイアログ -->
@@ -79,5 +98,6 @@
   <script src="opening.js"></script>
   <script src="ai.js"></script>
   <script src="ui.js"></script>
+  <script src="kifu_replay.js"></script>
 </body>
 </html>

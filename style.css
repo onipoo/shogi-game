@@ -47,75 +47,76 @@ header h1 {
 
 /* ===== メインレイアウト ===== */
 main {
-  max-width: 580px;
+  max-width: 800px;
   margin: 1rem auto;
   padding: 0 1rem 2rem;
   display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+/* ===== 左：盤面エリア ===== */
+#content-area {
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  flex: 0 0 auto;
 }
 
-/* ===== 持ち駒エリア（後手：左上、先手：右下） ===== */
+/* ===== 盤+持ち駒の横並びコンテナ ===== */
+#game-area {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+/* ===== 持ち駒エリア（後手：左、先手：右） ===== */
 #white-side {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start; /* 左寄せ */
+  align-items: flex-start;
+  justify-content: flex-start; /* 後手は上寄せ */
+  padding-top: 22px; /* col-labelsの高さ分オフセット */
+  width: 60px;
+  flex-shrink: 0;
 }
 
 #black-side {
-  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-end; /* 右寄せ */
-}
-
-.player-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.white-info {
-  flex-direction: row;
-}
-
-.black-info {
-  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: flex-end; /* 先手は下寄せ */
+  padding-top: 22px;
+  width: 60px;
+  flex-shrink: 0;
 }
 
 .player-name {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: bold;
   color: #D4B870;
   letter-spacing: 0.05em;
+  margin-bottom: 0.2rem;
 }
 
-.hands-label {
-  font-size: 0.75rem;
-  color: #8B6000;
-  border: 1px solid #C8A040;
-  padding: 1px 5px;
-  border-radius: 2px;
-  background: #FDF5DC;
+#black-side .player-name {
+  margin-bottom: 0;
+  margin-top: 0.2rem;
 }
 
 .hands {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  align-items: center;
-  background: #EFE0B0;
-  border: 1px solid #B89050;
-  border-radius: 3px;
-  padding: 0.3rem 0.5rem;
-  min-height: 36px;
-  min-width: 160px;
-  max-width: 440px;
+  flex-direction: column;
+  gap: 0.1rem;
+  align-items: flex-start;
+  background: transparent;
+  border: none;
+  padding: 0;
   font-size: 0.85rem;
-  color: #6B3A10;
+  color: #E8D5B0;
 }
 
 .hand-piece {
@@ -123,21 +124,20 @@ main {
   align-items: center;
   gap: 2px;
   padding: 2px 4px;
-  border: 1px solid #9A6830;
+  border: none;
   border-radius: 2px;
-  background: #FDFAF0;
+  background: transparent;
   cursor: pointer;
   user-select: none;
   transition: background 0.1s;
 }
 
 .hand-piece:hover {
-  background: #FFE090;
+  background: rgba(255,220,100,0.25);
 }
 
 .hand-piece.selected {
-  background: #FFC030;
-  border-color: #C07800;
+  background: rgba(255,180,0,0.35);
   box-shadow: 0 0 4px rgba(200,120,0,0.5);
 }
 
@@ -150,7 +150,7 @@ main {
 
 .hand-piece-count {
   font-size: 0.75rem;
-  color: #4A2808;
+  color: #E8D5B0;
   font-family: sans-serif;
   min-width: 14px;
 }
@@ -291,24 +291,41 @@ main {
   text-align: center;
 }
 
-/* ===== 棋譜 ===== */
+/* ===== 右：棋譜パネル ===== */
 #kifu-area {
-  width: 100%;
+  flex: 0 0 130px;
+  display: flex;
+  flex-direction: column;
+}
+
+.kifu-panel-title {
+  font-size: 0.78rem;
+  color: #C8A860;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.3rem;
+  text-align: center;
+}
+
+.kifu-current {
+  background: #F0C000;
+  color: #3A1000;
+  border-radius: 2px;
+  font-weight: bold;
+  display: block;
 }
 
 #kifu-log {
-  width: 100%;
-  max-height: 70px;
+  /* 盤面9マス分（52px×9 + 枠6px + col-labels約22px）に合わせた高さ */
+  height: calc(9 * 52px + 6px + 22px);
   overflow-y: auto;
-  background: #FDFAF0;
-  border: 1px solid #B89050;
-  border-radius: 3px;
-  padding: 0.3rem 0.6rem;
-  font-family: 'Courier New', monospace;
+  background: #FDF5DC;
+  border: 1px solid #C8A040;
+  border-radius: 2px;
+  padding: 0.3rem 0.5rem;
+  font-family: 'Noto Sans JP', 'Yu Mincho', serif;
   font-size: 0.82rem;
-  color: #4A2808;
-  line-height: 1.7;
-  word-break: break-all;
+  color: #5A2800;
+  line-height: 1.8;
 }
 
 /* ===== リセットボタン ===== */
@@ -330,6 +347,105 @@ main {
 
 #reset-btn:hover {
   background: #8B3010;
+}
+
+/* ===== 棋譜再生エリア ===== */
+#replay-area {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.replay-section-title {
+  font-size: 0.82rem;
+  color: #C8A860;
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.1em;
+}
+
+#replay-input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+#kifu-input {
+  width: 100%;
+  height: 90px;
+  background: #0E0800;
+  color: #D4B870;
+  border: 1px solid #6A4820;
+  border-radius: 2px;
+  padding: 0.4rem 0.6rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  resize: vertical;
+}
+
+#kifu-input::placeholder {
+  color: #5A4020;
+}
+
+#load-kifu-btn {
+  align-self: flex-end;
+  background: #3A1E00;
+  color: #E8C870;
+  border: 1px solid #7A4A10;
+  padding: 0.35rem 1.5rem;
+  font-size: 0.88rem;
+  font-family: 'Noto Sans JP', 'Yu Mincho', serif;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#load-kifu-btn:hover { background: #5A3010; }
+
+#replay-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+#replay-counter {
+  font-size: 0.9rem;
+  color: #C8A860;
+  min-width: 70px;
+}
+
+#replay-controls button {
+  background: #2A1400;
+  color: #D4B060;
+  border: 1px solid #6A4010;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+#replay-controls button:hover:not(:disabled) { background: #4A2800; }
+#replay-controls button:disabled { opacity: 0.35; cursor: default; }
+
+#replay-exit-btn {
+  margin-left: auto;
+  background: #1A0A00 !important;
+  border-color: #8B5020 !important;
+  color: #E8A060 !important;
+}
+
+#replay-exit-btn:hover { background: #3A1800 !important; }
+
+/* ===== 盤面反転モード ===== */
+/* 左右を入れ替え＋上下位置も入れ替え */
+main.flipped #white-side { order: 3; justify-content: flex-end; }
+main.flipped #board-area { order: 2; }
+main.flipped #black-side { order: 1; justify-content: flex-start; }
+
+#flip-btn.active {
+  background: #1A4A00 !important;
+  border-color: #4A9020 !important;
+  color: #B0E880 !important;
 }
 
 /* ===== ダイアログ ===== */
