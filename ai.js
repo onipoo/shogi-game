@@ -1,7 +1,7 @@
 'use strict';
 
 const AI_DEPTH = 4;
-const TIME_LIMIT_MS = 55000;
+const TIME_LIMIT_MS = 30000;
 
 let searchStartTime = 0;
 let timeoutFlag = false;
