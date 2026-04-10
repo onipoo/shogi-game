@@ -1,6 +1,8 @@
 'use strict';
 
-let TIME_LIMIT_MS = 10000; // デフォルト：普通（10秒）
+const MAX_THINK_MS = 30000; // 思考時間の上限
+const MIN_THINK_MS =  2000; // 思考時間の下限
+let TIME_LIMIT_MS  =  8000; // getBestMove内で局面に応じて動的に設定される
 
 let searchStartTime = 0;
 let timeoutFlag = false;
@@ -253,7 +255,16 @@ function alphaBeta(depth, alpha, beta, player) {
   }
 }
 
-// === AIの最善手を返す（反復深化）===
+// 合法手数から基本思考時間を決める
+function calcBaseThinkTime(numMoves) {
+  if (numMoves <=  5) return MIN_THINK_MS; // ほぼ強制手
+  if (numMoves <= 20) return  5000;
+  if (numMoves <= 50) return  8000;
+  if (numMoves <= 80) return 12000;
+  return 15000;                            // 非常に複雑な局面
+}
+
+// === AIの最善手を返す（反復深化＋アダプティブ思考時間）===
 function getBestMove() {
   // 定跡があれば即座に返す（高速・人間らしい序盤）
   const bookMove = getBookMove();
@@ -261,19 +272,23 @@ function getBestMove() {
 
   const moves = getLegalMoves('white');
   if (moves.length === 0) return null;
-  if (moves.length === 1) return moves[0];
+  if (moves.length === 1) return moves[0]; // 1手しかなければ即指し
 
   sortMoves(moves);
 
+  // 局面の複雑さに応じた基本思考時間を設定
+  TIME_LIMIT_MS   = calcBaseThinkTime(moves.length);
   searchStartTime = Date.now();
-  timeoutFlag = false;
-  nodeCount = 0;
+  timeoutFlag     = false;
+  nodeCount       = 0;
 
-  let bestMove = moves[0];
+  let bestMove    = moves[0];
+  let prevBestKey = null;
 
   // 深さ1から順に時間内で深くする
   for (let depth = 1; depth <= 10; depth++) {
-    if (timeoutFlag) break;
+    if (Date.now() - searchStartTime >= TIME_LIMIT_MS) break;
+    timeoutFlag = false; // 新しい深さの探索を開始
 
     let iterBest = null;
     let iterBestScore = Infinity;
@@ -290,9 +305,15 @@ function getBestMove() {
       }
     }
 
-    // 完了した深さの結果のみ採用（途中打ち切りは破棄）
+    // 完了した深さの結果のみ採用
     if (!timeoutFlag && iterBest) {
-      bestMove = iterBest;
+      const key = histKey(iterBest);
+      if (prevBestKey !== null && key !== prevBestKey) {
+        // ベスト手が変わった → 局面が不安定 → 思考時間を最大1.5倍延長
+        TIME_LIMIT_MS = Math.min(Math.round(TIME_LIMIT_MS * 1.5), MAX_THINK_MS);
+      }
+      prevBestKey = key;
+      bestMove    = iterBest;
     }
   }
 

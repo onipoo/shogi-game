@@ -10,7 +10,6 @@ self.onmessage = function(e) {
   gameOver      = false;
   winner        = null;
   kifuLog       = [...d.kifuLog];
-  TIME_LIMIT_MS = d.timeLimit;
 
   const move = getBestMove();
   self.postMessage(move);
