@@ -349,6 +349,40 @@ main {
   background: #8B3010;
 }
 
+/* ===== 難易度選択 ===== */
+#difficulty-area {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.difficulty-label {
+  font-size: 0.82rem;
+  color: #C8A860;
+  letter-spacing: 0.05em;
+}
+
+.diff-btn {
+  background: #2A1400;
+  color: #D4B060;
+  border: 1px solid #6A4010;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.82rem;
+  font-family: 'Noto Sans JP', 'Yu Mincho', serif;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.diff-btn:hover { background: #4A2800; }
+
+.diff-btn.active {
+  background: #5A3000;
+  border-color: #C8A040;
+  color: #F0D080;
+}
+
 /* ===== 棋譜再生エリア ===== */
 #replay-area {
   width: 100%;

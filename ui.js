@@ -36,6 +36,14 @@ function displayIsBlack(isBlack) {
   return boardFlipped ? !isBlack : isBlack;
 }
 
+// === 難易度設定 ===
+function setDifficulty(seconds) {
+  TIME_LIMIT_MS = seconds * 1000;
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.secs) === seconds);
+  });
+}
+
 // === 初期化 ===
 function init() {
   initBoard();
@@ -46,6 +54,9 @@ function init() {
   document.getElementById('play-again-btn').addEventListener('click', resetGame);
   document.getElementById('promote-yes').addEventListener('click', () => resolvePromotion(true));
   document.getElementById('promote-no').addEventListener('click', () => resolvePromotion(false));
+  document.querySelectorAll('.diff-btn').forEach(btn => {
+    btn.addEventListener('click', () => setDifficulty(parseInt(btn.dataset.secs)));
+  });
 }
 
 function resetGame() {
@@ -243,11 +254,11 @@ function executePlayerMove(move) {
     document.getElementById('turn-indicator').textContent = `AIが考え中... ${aiSeconds}秒`;
   }, 1000);
 
-  // 35秒で強制終了（最初の合法手を選ぶ）
+  // 思考時間+5秒で強制終了（最初の合法手を選ぶ）
   activeAiHardId = setTimeout(() => {
     const moves = getLegalMoves('white');
     finishAiTurn(moves.length > 0 ? moves[0] : null);
-  }, 35000);
+  }, TIME_LIMIT_MS + 5000);
 
   // Web Worker 起動（描画後に開始するため setTimeout で1フレーム遅らせる）
   setTimeout(() => {
@@ -264,7 +275,8 @@ function executePlayerMove(move) {
         board:         board.map(r => [...r]),
         hands:         { black: [...hands.black], white: [...hands.white] },
         currentPlayer: currentPlayer,
-        kifuLog:       [...kifuLog]
+        kifuLog:       [...kifuLog],
+        timeLimit:     TIME_LIMIT_MS
       });
     } catch(e) {
       // Worker自体が作れない環境：同期フォールバック

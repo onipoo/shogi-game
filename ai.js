@@ -1,7 +1,6 @@
 'use strict';
 
-const AI_DEPTH = 4;
-const TIME_LIMIT_MS = 30000;
+let TIME_LIMIT_MS = 10000; // デフォルト：普通（10秒）
 
 let searchStartTime = 0;
 let timeoutFlag = false;
@@ -210,9 +209,8 @@ function alphaBeta(depth, alpha, beta, player) {
 
   const moves = getLegalMoves(player);
   if (moves.length === 0) {
-    return player === 'black'
-      ? -90000 + (AI_DEPTH - depth)
-      :  90000 - (AI_DEPTH - depth);
+    // 浅い位置（depthが大きい）での詰みを優先する
+    return player === 'black' ? -90000 - depth : 90000 + depth;
   }
 
   sortMoves(moves);
@@ -255,23 +253,7 @@ function alphaBeta(depth, alpha, beta, player) {
   }
 }
 
-// 持ち駒の総数を数える
-function totalHandPieces() {
-  let n = 0;
-  for (let p = 1; p <= 7; p++) n += hands.black[p] + hands.white[p];
-  return n;
-}
-
-// 局面の複雑度に応じた探索深さを返す
-// 持ち駒が増えると打ち手が爆発するため深さを下げて速度を保つ
-function getSearchDepth() {
-  const h = totalHandPieces();
-  if (h >= 10) return 3; // 持ち駒10枚以上 → 深さ3
-  if (h >= 6)  return 3; // 持ち駒 6〜9枚  → 深さ3
-  return AI_DEPTH;       // 持ち駒 0〜5枚  → 深さ4
-}
-
-// === AIの最善手を返す ===
+// === AIの最善手を返す（反復深化）===
 function getBestMove() {
   // 定跡があれば即座に返す（高速・人間らしい序盤）
   const bookMove = getBookMove();
@@ -279,6 +261,7 @@ function getBestMove() {
 
   const moves = getLegalMoves('white');
   if (moves.length === 0) return null;
+  if (moves.length === 1) return moves[0];
 
   sortMoves(moves);
 
@@ -286,22 +269,33 @@ function getBestMove() {
   timeoutFlag = false;
   nodeCount = 0;
 
-  const depth = getSearchDepth(); // 局面複雑度に応じた深さ
-
   let bestMove = moves[0];
-  let bestScore = Infinity;
 
-  for (const move of moves) {
+  // 深さ1から順に時間内で深くする
+  for (let depth = 1; depth <= 10; depth++) {
     if (timeoutFlag) break;
-    const st = saveState();
-    executeMove(move, 'white');
-    const score = alphaBeta(depth - 1, -Infinity, Infinity, 'black');
-    restoreState(st);
-    if (score < bestScore) {
-      bestScore = score;
-      bestMove = move;
+
+    let iterBest = null;
+    let iterBestScore = Infinity;
+
+    for (const move of moves) {
+      if (timeoutFlag) break;
+      const st = saveState();
+      executeMove(move, 'white');
+      const score = alphaBeta(depth - 1, -Infinity, Infinity, 'black');
+      restoreState(st);
+      if (score < iterBestScore) {
+        iterBestScore = score;
+        iterBest = move;
+      }
+    }
+
+    // 完了した深さの結果のみ採用（途中打ち切りは破棄）
+    if (!timeoutFlag && iterBest) {
+      bestMove = iterBest;
     }
   }
+
   return bestMove;
 }
 
