@@ -330,6 +330,49 @@ main {
   line-height: 1.8;
 }
 
+/* ===== SFENエリア ===== */
+#sfen-area {
+  flex-direction: column;
+  gap: 0.4rem;
+  height: calc(9 * 52px + 6px + 22px);
+}
+
+#sfen-input {
+  flex: 1;
+  resize: none;
+  background: #FDF5DC;
+  border: 1px solid #C8A040;
+  border-radius: 2px;
+  padding: 0.4rem 0.5rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  color: #5A2800;
+  word-break: break-all;
+}
+
+#sfen-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+#sfen-output-btn,
+#sfen-load-btn {
+  width: 100%;
+  padding: 0.35rem 0.2rem;
+  font-size: 0.78rem;
+  background: #3A5A8A;
+  color: #E8D5B0;
+  border: 1px solid #5A7AAA;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+#sfen-output-btn:hover,
+#sfen-load-btn:hover {
+  background: #4A6A9A;
+}
+
 /* ===== ゲームボタン群 ===== */
 #game-btns {
   display: flex;

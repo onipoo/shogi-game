@@ -52,6 +52,7 @@ function enterEditMode() {
   document.getElementById('white-hands').addEventListener('click', _whiteHandsListener);
   document.getElementById('black-hands').addEventListener('click', _blackHandsListener);
 
+  _showSfenArea(true);
   renderAll();
 }
 
@@ -94,6 +95,7 @@ function exitEditMode(apply) {
   document.getElementById('reset-btn').style.display       = '';
   document.getElementById('edit-mode-btn').style.display   = '';
   document.getElementById('replay-area').style.display     = '';
+  _showSfenArea(false);
 
   // 持ち駒エリアのリスナーを解除
   if (_whiteHandsListener) {
@@ -296,6 +298,130 @@ function initBoardEditor() {
   renderAll();
 }
 
+// === SFEN変換テーブル ===
+const _PIECE_TO_SFEN = {
+  [FU]:'p',[KY]:'l',[KE]:'n',[GI]:'s',[KI]:'g',[KA]:'b',[HI]:'r',[OU]:'k',
+  [TO]:'+p',[NY]:'+l',[NK]:'+n',[NG]:'+s',[UM]:'+b',[RY]:'+r'
+};
+const _SFEN_TO_PIECE  = { 'p':FU,'l':KY,'n':KE,'s':GI,'g':KI,'b':KA,'r':HI,'k':OU };
+const _SFEN_PROMOTED  = { 'p':TO,'l':NY,'n':NK,'s':NG,'b':UM,'r':RY };
+const _HAND_ORDER_SFEN = [HI, KA, KI, GI, KE, KY, FU]; // 標準SFEN持ち駒順
+
+// === 現在局面をSFEN文字列に変換 ===
+function boardToSFEN() {
+  let sfenBoard = '';
+  for (let r = 0; r < 9; r++) {
+    let empty = 0;
+    for (let c = 0; c < 9; c++) {
+      const piece = board[r][c];
+      if (piece === 0) {
+        empty++;
+      } else {
+        if (empty > 0) { sfenBoard += empty; empty = 0; }
+        const code = _PIECE_TO_SFEN[Math.abs(piece)];
+        // 先手は大文字、後手は小文字（+プレフィックスはそのまま残す）
+        sfenBoard += piece > 0 ? code.replace(/[a-z]/g, ch => ch.toUpperCase()) : code;
+      }
+    }
+    if (empty > 0) sfenBoard += empty;
+    if (r < 8) sfenBoard += '/';
+  }
+
+  const turn = editCurrentTurn === 'black' ? 'b' : 'w';
+
+  let handStr = '';
+  for (const player of ['black', 'white']) {
+    for (const p of _HAND_ORDER_SFEN) {
+      const count = hands[player][p];
+      if (count <= 0) continue;
+      if (count > 1) handStr += count;
+      const code = _PIECE_TO_SFEN[p].replace('+', ''); // 持ち駒は成り前
+      handStr += player === 'black' ? code.toUpperCase() : code;
+    }
+  }
+  if (handStr === '') handStr = '-';
+
+  return `${sfenBoard} ${turn} ${handStr} 1`;
+}
+
+// === SFEN文字列から局面を復元 ===
+function sfenToBoard(sfen) {
+  const parts = sfen.trim().split(/\s+/);
+  if (parts.length < 3) return false;
+  const [boardStr, turnStr, handsStr] = parts;
+
+  // 盤面パース
+  const rows = boardStr.split('/');
+  if (rows.length !== 9) return false;
+  const newBoard = Array.from({ length: 9 }, () => new Array(9).fill(0));
+
+  for (let r = 0; r < 9; r++) {
+    let c = 0, i = 0;
+    const row = rows[r];
+    while (i < row.length && c < 9) {
+      if (row[i] === '+') {
+        i++;
+        if (i >= row.length) return false;
+        const ch = row[i].toLowerCase();
+        const p  = _SFEN_PROMOTED[ch];
+        if (!p) return false;
+        newBoard[r][c] = row[i] === row[i].toUpperCase() ? p : -p;
+        c++; i++;
+      } else if (row[i] >= '1' && row[i] <= '9') {
+        c += parseInt(row[i]); i++;
+      } else {
+        const ch = row[i].toLowerCase();
+        const p  = _SFEN_TO_PIECE[ch];
+        if (!p) return false;
+        newBoard[r][c] = row[i] === row[i].toUpperCase() ? p : -p;
+        c++; i++;
+      }
+    }
+  }
+
+  // 手番パース
+  if (turnStr !== 'b' && turnStr !== 'w') return false;
+
+  // 持ち駒パース
+  const newHands = { black: new Array(15).fill(0), white: new Array(15).fill(0) };
+  if (handsStr !== '-') {
+    let i = 0;
+    while (i < handsStr.length) {
+      let count = 1;
+      if (handsStr[i] >= '1' && handsStr[i] <= '9') {
+        let numStr = '';
+        while (i < handsStr.length && handsStr[i] >= '0' && handsStr[i] <= '9') {
+          numStr += handsStr[i++];
+        }
+        count = parseInt(numStr);
+      }
+      if (i >= handsStr.length) return false;
+      const ch = handsStr[i].toLowerCase();
+      const p  = _SFEN_TO_PIECE[ch];
+      if (!p) return false;
+      const player = handsStr[i] === handsStr[i].toUpperCase() ? 'black' : 'white';
+      newHands[player][p] += count;
+      i++;
+    }
+  }
+
+  // 適用
+  board           = newBoard;
+  hands.black     = newHands.black;
+  hands.white     = newHands.white;
+  editCurrentTurn = turnStr === 'b' ? 'black' : 'white';
+  _updateEditorTurnBtn();
+  return true;
+}
+
+// === 編集モード中SFENエリア表示切替 ===
+function _showSfenArea(show) {
+  document.getElementById('kifu-log').style.display      = show ? 'none' : '';
+  document.getElementById('sfen-area').style.display     = show ? 'flex' : 'none';
+  document.getElementById('kifu-panel-title').textContent = show ? '局面コード（SFEN）' : '棋譜';
+  if (show) document.getElementById('sfen-input').value = '';
+}
+
 // === イベント登録 ===
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('edit-mode-btn').addEventListener('click',    enterEditMode);
@@ -304,4 +430,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('editor-init-btn').addEventListener('click',  initBoardEditor);
   document.getElementById('editor-done-btn').addEventListener('click',  () => exitEditMode(true));
   document.getElementById('editor-cancel-btn').addEventListener('click',() => exitEditMode(false));
+
+  document.getElementById('sfen-output-btn').addEventListener('click', () => {
+    document.getElementById('sfen-input').value = boardToSFEN();
+  });
+
+  document.getElementById('sfen-load-btn').addEventListener('click', () => {
+    const sfen = document.getElementById('sfen-input').value.trim();
+    if (!sfen) return;
+    if (sfenToBoard(sfen)) {
+      clearDrawings();
+      selectedSquare        = null;
+      editSelectedHandPiece = null;
+      renderAll();
+    } else {
+      alert('無効なSFEN形式です。形式を確認してください。');
+    }
+  });
 });

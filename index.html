@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>将棋AI対戦 | 古里将棋</title>
+  <title>古里将棋</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header>
     <div class="header-deco">─────◈─────</div>
-    <h1>古里将棋AI</h1>
+    <h1>古里将棋</h1>
     <div class="header-deco">─────◈─────</div>
     <p class="header-sub">先手（あなた）vs 後手（AI）</p>
   </header>
@@ -84,8 +84,16 @@
 
     <!-- 右：棋譜パネル -->
     <div id="kifu-area">
-      <div class="kifu-panel-title">棋譜</div>
+      <div class="kifu-panel-title" id="kifu-panel-title">棋譜</div>
       <div id="kifu-log"></div>
+      <!-- 局面編集モード中のSFEN入出力エリア -->
+      <div id="sfen-area" style="display:none">
+        <textarea id="sfen-input" placeholder="SFENをここに貼り付け&#10;例：lnsgkgsnl/1r5b1/&#10;ppppppppp/9/9/9/&#10;PPPPPPPPP/1B5R1/&#10;LNSGKGSNL b - 1"></textarea>
+        <div id="sfen-btns">
+          <button id="sfen-output-btn">局面を出力</button>
+          <button id="sfen-load-btn">局面を読み込む</button>
+        </div>
+      </div>
     </div>
   </main>
 
