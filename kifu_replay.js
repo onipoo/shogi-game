@@ -30,6 +30,8 @@ function parseKIF(text) {
     if (!m) continue;
 
     let s = m[2].trim();
+    // ☗/☖ プレフィックスを除去（このアプリの棋譜形式に対応）
+    if (s[0] === '☗' || s[0] === '☖') s = s.slice(1);
 
     if (/投了|中断|詰み|千日手|持将棋|切れ負け/.test(s)) break;
 

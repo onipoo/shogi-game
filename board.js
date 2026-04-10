@@ -265,7 +265,14 @@ function applyMove(move) {
   const kifuCol = COL_FULLWIDTH[9 - move.to.col];
   const kifuRow = ROW_KANJI[move.to.row];
   const prefix = currentPlayer === 'black' ? '☗' : '☖';
-  const suffix = move.drop ? '打' : (move.promote ? '成' : '');
+  let suffix;
+  if (move.drop) {
+    suffix = '打';
+  } else {
+    const fromKifCol = 9 - move.from.col;
+    const fromKifRow = move.from.row + 1;
+    suffix = (move.promote ? '成' : '') + `(${fromKifCol}${fromKifRow})`;
+  }
   kifuLog.push(`${prefix}${kifuCol}${kifuRow}${PIECE_CHAR[move.piece]}${suffix}`);
 
   executeMove(move, currentPlayer);
