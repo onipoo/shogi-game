@@ -118,11 +118,15 @@ function renderBoard() {
 
       if (selectedSquare && selectedSquare.row === r && selectedSquare.col === c) {
         cell.classList.add('selected');
-      } else if (isLegalTarget(r, c)) {
+      } else if (!editMode && isLegalTarget(r, c)) {
         cell.classList.add('legal');
       }
 
       cell.addEventListener('click', () => handleCellClick(r, c));
+      cell.addEventListener('contextmenu', ev => {
+        if (editMode) handleEditCellRightClick(r, c, ev);
+        else ev.preventDefault();
+      });
       boardEl.appendChild(cell);
     }
   }
@@ -147,6 +151,7 @@ function isLegalTarget(r, c) {
 
 // === マスのクリック処理 ===
 function handleCellClick(r, c) {
+  if (editMode) { handleEditCellClick(r, c); return; }
   if (replayMode || currentPlayer !== 'black' || aiThinking || gameOver || pendingPromotion) return;
 
   const piece = board[r][c];
@@ -278,6 +283,11 @@ function executePlayerMove(move) {
 function renderHands() {
   renderHandArea('white', document.getElementById('white-hands'));
   renderHandArea('black', document.getElementById('black-hands'));
+
+  // 編集モードで盤上の駒を選択中は持ち駒エリアをハイライト
+  const dropTarget = editMode && selectedSquare !== null;
+  document.getElementById('white-hands').classList.toggle('edit-drop-target', dropTarget);
+  document.getElementById('black-hands').classList.toggle('edit-drop-target', dropTarget);
 }
 
 function renderHandArea(player, container) {
@@ -304,13 +314,17 @@ function renderHandArea(player, container) {
       el.appendChild(cnt);
     }
 
-    if (player === 'black') {
+    if (editMode) {
+      el.addEventListener('click',       ()  => handleEditHandClick(player, p));
+      el.addEventListener('contextmenu', ev  => handleEditHandRightClick(player, p, ev));
+      const sel = editSelectedHandPiece;
+      if (sel && sel.player === player && sel.p === p) el.classList.add('selected');
+    } else if (player === 'black') {
       el.addEventListener('click', () => handleHandClick(p));
       if (selectedHandPiece === p) el.classList.add('selected');
     }
     container.appendChild(el);
   }
-
 }
 
 // === 持ち駒クリック処理 ===

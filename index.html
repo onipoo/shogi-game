@@ -49,7 +49,17 @@
 
       <div id="turn-indicator">あなたの番です</div>
 
-      <button id="reset-btn">リセット</button>
+      <div id="game-btns">
+        <button id="reset-btn">リセット</button>
+        <button id="edit-mode-btn">局面編集</button>
+      </div>
+
+      <!-- 局面編集コントロール -->
+      <div id="editor-controls" style="display:none">
+        <button id="editor-turn-btn">手番：先手</button>
+        <button id="editor-done-btn">対局開始</button>
+        <button id="editor-cancel-btn">キャンセル</button>
+      </div>
 
       <!-- 棋譜再生エリア -->
       <div id="replay-area">
@@ -99,5 +109,6 @@
   <script src="ai.js"></script>
   <script src="ui.js"></script>
   <script src="kifu_replay.js"></script>
+  <script src="position_editor.js"></script>
 </body>
 </html>
