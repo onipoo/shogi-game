@@ -182,7 +182,9 @@ main {
 #board-inner {
   display: flex;
   align-items: flex-start;
+  position: relative;
 }
+
 
 #board {
   display: grid;

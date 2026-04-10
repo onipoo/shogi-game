@@ -16,13 +16,16 @@ function enterEditMode() {
 
   // 編集前の状態を保存（キャンセル用）
   editSavedState = {
-    board:   board.map(r => [...r]),
-    bHand:   [...hands.black],
-    wHand:   [...hands.white],
+    board:     board.map(r => [...r]),
+    bHand:     [...hands.black],
+    wHand:     [...hands.white],
     currentPlayer,
     gameOver,
     winner,
-    kifuLog: [...kifuLog]
+    kifuLog:   [...kifuLog],
+    headerSub:   document.querySelector('.header-sub').textContent,
+    nameWhite:   document.querySelector('#white-side .player-name').textContent,
+    nameBlack:   document.querySelector('#black-side .player-name').textContent,
   };
 
   editMode = true;
@@ -38,7 +41,10 @@ function enterEditMode() {
   document.getElementById('game-over-dialog').style.display = 'none';
   document.getElementById('promotion-dialog').style.display = 'none';
   _updateEditorTurnBtn();
-  document.getElementById('turn-indicator').textContent = '局面編集中（右クリックで盤から除去）';
+  document.querySelector('.header-sub').textContent = '局面編集';
+  document.querySelector('#white-side .player-name').textContent = '後手';
+  document.querySelector('#black-side .player-name').textContent = '先手';
+  document.getElementById('turn-indicator').textContent = '局面編集中（右クリック：丸印・矢印の描画）';
 
   // 持ち駒エリアのコンテナ全体にクリックイベント（駒が0枚でも選択中の駒を移動できる）
   _whiteHandsListener = () => { if (selectedSquare) handleEditHandClick('white', 0); };
@@ -69,6 +75,13 @@ function exitEditMode(apply) {
     gameOver      = editSavedState.gameOver;
     winner        = editSavedState.winner;
     kifuLog       = [...editSavedState.kifuLog];
+  }
+
+  // ヘッダーを元に戻す（null化の前に参照）
+  if (editSavedState) {
+    document.querySelector('.header-sub').textContent              = editSavedState.headerSub;
+    document.querySelector('#white-side .player-name').textContent = editSavedState.nameWhite;
+    document.querySelector('#black-side .player-name').textContent = editSavedState.nameBlack;
   }
 
   editMode = false;
@@ -224,24 +237,6 @@ function handleEditCellClick(r, c) {
   }
 }
 
-// === 編集モード：盤上右クリック → 同じ位置クリックと同じサイクル ===
-function handleEditCellRightClick(r, c, ev) {
-  ev.preventDefault();
-  const piece = board[r][c];
-  if (piece === 0) return;
-
-  const absP = Math.abs(piece);
-  const s    = piece > 0 ? 1 : -1;
-  if (PROMOTE_MAP[absP] !== undefined) {
-    board[r][c] = s * PROMOTE_MAP[absP];
-  } else if (DEMOTE_MAP[absP] !== undefined) {
-    board[r][c] = -s * DEMOTE_MAP[absP];
-  } else {
-    board[r][c] = -piece;
-  }
-  selectedSquare = null;
-  renderAll();
-}
 
 // === 編集モード：持ち駒クリック → 盤上選択中なら持ち駒に移動、そうでなければ配置モード ===
 function handleEditHandClick(player, p) {
@@ -269,14 +264,44 @@ function handleEditHandClick(player, p) {
 }
 
 // === 編集モード：持ち駒右クリック → 無効（コンテキストメニュー抑止のみ） ===
-function handleEditHandRightClick(player, p, ev) {
+function handleEditHandRightClick(_player, _p, ev) {
   ev.preventDefault();
+}
+
+// === 盤面クリア（盤上の全駒を持ち駒に移動） ===
+function clearBoardEditor() {
+  clearDrawings();
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const piece = board[r][c];
+      if (piece === 0) continue;
+      const absP    = Math.abs(piece);
+      const owner   = piece > 0 ? 'black' : 'white';
+      const demoted = DEMOTE_MAP[absP] || absP;
+      hands[owner][demoted]++;
+      board[r][c] = 0;
+    }
+  }
+  selectedSquare        = null;
+  editSelectedHandPiece = null;
+  renderAll();
+}
+
+// === 初期配置に戻す ===
+function initBoardEditor() {
+  clearDrawings();
+  initBoard(); // 盤・持ち駒をリセット（editCurrentTurnは保持）
+  selectedSquare        = null;
+  editSelectedHandPiece = null;
+  renderAll();
 }
 
 // === イベント登録 ===
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('edit-mode-btn').addEventListener('click',   enterEditMode);
-  document.getElementById('editor-turn-btn').addEventListener('click', toggleEditTurn);
-  document.getElementById('editor-done-btn').addEventListener('click', () => exitEditMode(true));
-  document.getElementById('editor-cancel-btn').addEventListener('click', () => exitEditMode(false));
+  document.getElementById('edit-mode-btn').addEventListener('click',    enterEditMode);
+  document.getElementById('editor-turn-btn').addEventListener('click',  toggleEditTurn);
+  document.getElementById('editor-clear-btn').addEventListener('click', clearBoardEditor);
+  document.getElementById('editor-init-btn').addEventListener('click',  initBoardEditor);
+  document.getElementById('editor-done-btn').addEventListener('click',  () => exitEditMode(true));
+  document.getElementById('editor-cancel-btn').addEventListener('click',() => exitEditMode(false));
 });

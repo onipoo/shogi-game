@@ -68,6 +68,7 @@ function renderAll() {
   renderBoard();
   renderHands();
   renderKifu();
+  renderDrawings();
 }
 
 const STAR_DIRS = { '3,3':'tl', '3,5':'tr', '5,3':'bl', '5,5':'br' };
@@ -123,10 +124,7 @@ function renderBoard() {
       }
 
       cell.addEventListener('click', () => handleCellClick(r, c));
-      cell.addEventListener('contextmenu', ev => {
-        if (editMode) handleEditCellRightClick(r, c, ev);
-        else ev.preventDefault();
-      });
+      cell.addEventListener('contextmenu', ev => ev.preventDefault());
       boardEl.appendChild(cell);
     }
   }
@@ -294,12 +292,14 @@ function renderHandArea(player, container) {
   container.innerHTML = '';
   const hand = hands[player];
 
-  // 持ち駒の表示順（飛・角・金・銀・桂・香・歩）
-  const order = [HI, KA, KI, GI, KE, KY, FU];
+  // 持ち駒の表示順（編集モードは玉も含む）
+  const order = editMode ? [HI, KA, KI, GI, KE, KY, FU, OU] : [HI, KA, KI, GI, KE, KY, FU];
   for (const p of order) {
     if (hand[p] === 0) continue;
     const el = document.createElement('span');
     el.className = 'hand-piece';
+    el.dataset.player = player;
+    el.dataset.piece  = p;
 
     const img = document.createElement('img');
     img.src = pieceImgSrc(p, displayIsBlack(player === 'black'));

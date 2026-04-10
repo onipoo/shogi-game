@@ -33,7 +33,7 @@
           </div>
           <div id="board-inner">
             <div id="board"></div>
-            <div id="row-labels">
+<div id="row-labels">
               <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span>
               <span>六</span><span>七</span><span>八</span><span>九</span>
             </div>
@@ -57,6 +57,8 @@
       <!-- 局面編集コントロール -->
       <div id="editor-controls" style="display:none">
         <button id="editor-turn-btn">手番：先手</button>
+        <button id="editor-clear-btn">盤面クリア</button>
+        <button id="editor-init-btn">初期配置</button>
         <button id="editor-done-btn">対局開始</button>
         <button id="editor-cancel-btn">キャンセル</button>
       </div>
@@ -110,5 +112,6 @@
   <script src="ui.js"></script>
   <script src="kifu_replay.js"></script>
   <script src="position_editor.js"></script>
+  <script src="drawing.js"></script>
 </body>
 </html>
