@@ -159,6 +159,8 @@ function setReplayUIVisible(entering) {
 
 // --- 再生モード開始 ---
 function enterReplayMode(parsedMoves) {
+  cancelActiveAi(); // 対局中のAI思考を中断
+  aiThinking = false;
   replayMode        = true;
   replayParsedMoves = parsedMoves;
   replayAllLabels   = [];
