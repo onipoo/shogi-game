@@ -142,11 +142,6 @@ function generateDropMoves(player) {
         if (board[r][c] !== 0) continue;
         // 行き所のない駒は打てない
         if (mustPromote(p, r, player)) continue;
-        // 歩は自陣の最後2列には打たない（戦略的にほぼ無意味＋速度最適化）
-        if (p === FU) {
-          if (player === 'black' && r >= 7) continue; // 8・9段目は不要
-          if (player === 'white' && r <= 1) continue; // 1・2段目は不要
-        }
         // 二歩禁止
         if (p === FU) {
           const fuVal = player === 'black' ? FU : -FU;
