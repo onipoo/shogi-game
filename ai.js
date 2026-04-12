@@ -17,6 +17,114 @@ function histKey(move) {
     : `${move.from.row}${move.from.col}${move.to.row}${move.to.col}`;
 }
 
+// === Zobristハッシュ（置換表用） ===
+// xorshift32による決定論的PRNG（再現性のため固定シード）
+let _zs = 0x9E3779B9;
+function _zrand() {
+  _zs ^= _zs << 13; _zs ^= (_zs >>> 17); _zs ^= _zs << 5;
+  return _zs | 0;
+}
+
+// 盤上: ZOBRIST_BOARD[マス(0-80) * 29 + 駒インデックス(1-28)]
+// 駒インデックス: p>0→p(1-14), p<0→14+(-p)(15-28)
+const ZOBRIST_BOARD  = new Int32Array(81 * 29);
+// 持ち駒: [駒種(0-7)][枚数(0-18)] ※枚数0は0（寄与なし）
+const ZOBRIST_HAND_B = new Int32Array(8 * 19);
+const ZOBRIST_HAND_W = new Int32Array(8 * 19);
+let ZOBRIST_SIDE = 0;
+
+(function _initZobrist() {
+  for (let i = 0; i < 81 * 29; i++) ZOBRIST_BOARD[i] = _zrand();
+  for (let p = 1; p <= 7; p++) {
+    ZOBRIST_HAND_B[p * 19] = 0; // 枚数0 → ハッシュ寄与なし
+    ZOBRIST_HAND_W[p * 19] = 0;
+    for (let cnt = 1; cnt <= 18; cnt++) {
+      ZOBRIST_HAND_B[p * 19 + cnt] = _zrand();
+      ZOBRIST_HAND_W[p * 19 + cnt] = _zrand();
+    }
+  }
+  ZOBRIST_SIDE = _zrand();
+})();
+
+function _pieceIdx(p) { return p > 0 ? p : 14 - p; } // +1..+14→1..14, -1..-14→15..28
+
+function computeZobrist(player) {
+  let h = 0;
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const p = board[r][c];
+      if (p !== 0) h ^= ZOBRIST_BOARD[(r * 9 + c) * 29 + _pieceIdx(p)];
+    }
+  }
+  for (let p = 1; p <= 7; p++) {
+    const bc = hands.black[p], wc = hands.white[p];
+    if (bc > 0) h ^= ZOBRIST_HAND_B[p * 19 + bc];
+    if (wc > 0) h ^= ZOBRIST_HAND_W[p * 19 + wc];
+  }
+  if (player === 'white') h ^= ZOBRIST_SIDE;
+  return h | 0; // 32bit符号付きに正規化
+}
+
+// === 置換表（Transposition Table） ===
+const TT_SIZE       = 1 << 17; // 131072エントリー
+const TT_MASK       = TT_SIZE - 1;
+const TT_EXACT      = 0;
+const TT_LOWERBOUND = 1; // 失敗高（真値 ≥ score）
+const TT_UPPERBOUND = 2; // 失敗低（真値 ≤ score）
+
+const TT_HASH  = new Int32Array(TT_SIZE); // ハッシュ（0=空き）
+const TT_SCORE = new Int32Array(TT_SIZE);
+const TT_DEPTH = new Int8Array(TT_SIZE);
+const TT_FLAG  = new Uint8Array(TT_SIZE);
+const TT_MOVE  = new Int32Array(TT_SIZE); // エンコード済み最善手
+
+// 指し手エンコード: 打ち→bit17=1|駒(4b)|行先行(4b)|行先列(4b), 盤上→移動元行(4b)|列(4b)|行先行(4b)|列(4b)|成(1b)
+function _encodeMv(m) {
+  if (!m) return 0;
+  if (m.drop) return (1 << 17) | (m.piece << 8) | (m.to.row << 4) | m.to.col;
+  return (m.from.row << 13) | (m.from.col << 9) | (m.to.row << 5) | (m.to.col << 1) | (m.promote ? 1 : 0);
+}
+
+function _findTtMove(encoded, moves) {
+  if (!encoded) return null;
+  if (encoded & (1 << 17)) {
+    const piece = (encoded >> 8) & 0xF;
+    const toRow = (encoded >> 4) & 0xF;
+    const toCol =  encoded       & 0xF;
+    return moves.find(m => m.drop && m.piece === piece && m.to.row === toRow && m.to.col === toCol) || null;
+  }
+  const fromRow = (encoded >> 13) & 0xF;
+  const fromCol = (encoded >>  9) & 0xF;
+  const toRow   = (encoded >>  5) & 0xF;
+  const toCol   = (encoded >>  1) & 0xF;
+  const promote = (encoded & 1) === 1;
+  return moves.find(m => !m.drop && m.from.row === fromRow && m.from.col === fromCol &&
+    m.to.row === toRow && m.to.col === toCol && m.promote === promote) || null;
+}
+
+function ttGet(hash, depth, alpha, beta) {
+  const idx = hash & TT_MASK;
+  if (TT_HASH[idx] !== hash)       return null; // ミス or 衝突
+  if (TT_DEPTH[idx] < depth)       return null; // 探索深さ不足
+  const score = TT_SCORE[idx];
+  const flag  = TT_FLAG[idx];
+  if (flag === TT_EXACT)                        return score;
+  if (flag === TT_LOWERBOUND && score >= beta)  return score;
+  if (flag === TT_UPPERBOUND && score <= alpha) return score;
+  return null;
+}
+
+function ttPut(hash, depth, score, flag, move) {
+  const idx = hash & TT_MASK;
+  // 既存エントリより今回の方が深い場合のみ上書き（浅い結果で良いデータを消さない）
+  if (TT_HASH[idx] !== 0 && TT_HASH[idx] !== hash && TT_DEPTH[idx] > depth) return;
+  TT_HASH[idx]  = hash;
+  TT_SCORE[idx] = score;
+  TT_DEPTH[idx] = depth;
+  TT_FLAG[idx]  = flag;
+  TT_MOVE[idx]  = _encodeMv(move);
+}
+
 // === 駒位置評価テーブル（先手視点・後手は上下反転）===
 
 // 歩：前進するほど高評価、中央筋を優先
@@ -138,14 +246,27 @@ function evaluate() {
 }
 
 // === 手の並び替え（α-β剪定の効率を上げる）===
-function sortMoves(moves) {
+// ttHint: 置換表から得た最善手（TT_MOVEのエンコード値）
+function sortMoves(moves, ttHintEncoded = 0) {
+  const ttHint = ttHintEncoded ? _findTtMove(ttHintEncoded, moves) : null;
+
   moves.sort((a, b) => {
-    const va = (a.captured ? PIECE_VALUES[a.captured] * 2 : 0)
-             + (a.promote  ? 60 : 0)
-             + ((historyTable[histKey(a)] || 0));
-    const vb = (b.captured ? PIECE_VALUES[b.captured] * 2 : 0)
-             + (b.promote  ? 60 : 0)
-             + ((historyTable[histKey(b)] || 0));
+    // 置換表のヒント手を最優先
+    if (a === ttHint) return -1;
+    if (b === ttHint) return  1;
+
+    // MVV-LVA: 取られる駒の価値 - 取る駒の価値（安い駒で高い駒を取る手を優先）
+    const aCapVal = a.captured ? PIECE_VALUES[a.captured] : 0;
+    const bCapVal = b.captured ? PIECE_VALUES[b.captured] : 0;
+    const aAttVal = a.captured ? PIECE_VALUES[a.drop ? a.piece : Math.abs(board[a.from.row][a.from.col])] : 0;
+    const bAttVal = b.captured ? PIECE_VALUES[b.drop ? b.piece : Math.abs(board[b.from.row][b.from.col])] : 0;
+
+    const va = aCapVal * 10 - aAttVal
+             + (a.promote ? 60 : 0)
+             + (historyTable[histKey(a)] || 0);
+    const vb = bCapVal * 10 - bAttVal
+             + (b.promote ? 60 : 0)
+             + (historyTable[histKey(b)] || 0);
     return vb - va;
   });
 }
@@ -209,13 +330,25 @@ function alphaBeta(depth, alpha, beta, player) {
   // 末端ノード → 静止探索へ（駒取りがあれば読み続ける）
   if (depth === 0) return quiesce(alpha, beta, player);
 
+  // 置換表チェック
+  const hash = computeZobrist(player);
+  const ttScore = ttGet(hash, depth, alpha, beta);
+  if (ttScore !== null) return ttScore;
+
   const moves = getLegalMoves(player);
   if (moves.length === 0) {
     // 浅い位置（depthが大きい）での詰みを優先する
-    return player === 'black' ? -90000 - depth : 90000 + depth;
+    const mateVal = player === 'black' ? -90000 - depth : 90000 + depth;
+    ttPut(hash, depth, mateVal, TT_EXACT, null);
+    return mateVal;
   }
 
-  sortMoves(moves);
+  // 置換表のヒント手を先頭に置いてソート
+  sortMoves(moves, TT_MOVE[hash & TT_MASK]);
+
+  const origAlpha = alpha;
+  const origBeta  = beta;
+  let bestMove = moves[0];
 
   if (player === 'black') {
     let maxVal = -Infinity;
@@ -224,7 +357,7 @@ function alphaBeta(depth, alpha, beta, player) {
       executeMove(move, player);
       const val = alphaBeta(depth - 1, alpha, beta, 'white');
       restoreState(st);
-      if (val > maxVal) maxVal = val;
+      if (val > maxVal) { maxVal = val; bestMove = move; }
       if (val > alpha) {
         alpha = val;
         // 静かな手（捕獲でない）でβ超えなら履歴を更新
@@ -234,6 +367,10 @@ function alphaBeta(depth, alpha, beta, player) {
       }
       if (beta <= alpha) break; // β剪定
     }
+    if (!timeoutFlag) {
+      const flag = maxVal >= beta ? TT_LOWERBOUND : maxVal <= origAlpha ? TT_UPPERBOUND : TT_EXACT;
+      ttPut(hash, depth, maxVal, flag, bestMove);
+    }
     return maxVal;
   } else {
     let minVal = Infinity;
@@ -242,7 +379,7 @@ function alphaBeta(depth, alpha, beta, player) {
       executeMove(move, player);
       const val = alphaBeta(depth - 1, alpha, beta, 'black');
       restoreState(st);
-      if (val < minVal) minVal = val;
+      if (val < minVal) { minVal = val; bestMove = move; }
       if (val < beta) {
         beta = val;
         if (!move.captured) {
@@ -250,6 +387,10 @@ function alphaBeta(depth, alpha, beta, player) {
         }
       }
       if (beta <= alpha) break; // α剪定
+    }
+    if (!timeoutFlag) {
+      const flag = minVal <= alpha ? TT_UPPERBOUND : minVal >= origBeta ? TT_LOWERBOUND : TT_EXACT;
+      ttPut(hash, depth, minVal, flag, bestMove);
     }
     return minVal;
   }
@@ -290,6 +431,10 @@ function getBestMove() {
     if (Date.now() - searchStartTime >= TIME_LIMIT_MS) break;
     timeoutFlag = false; // 新しい深さの探索を開始
 
+    // 前のイテレーションのbestMoveを先頭に（反復深化の効率化）
+    const bestIdx = moves.indexOf(bestMove);
+    if (bestIdx > 0) { moves.splice(bestIdx, 1); moves.unshift(bestMove); }
+
     let iterBest = null;
     let iterBestScore = Infinity;
 
@@ -320,7 +465,8 @@ function getBestMove() {
   return bestMove;
 }
 
-// ゲームリセット時に履歴をクリア
+// ゲームリセット時に履歴と置換表をクリア
 function resetHistory() {
   historyTable = {};
+  TT_HASH.fill(0); // hash=0 を空きスロットのセンチネルとして使用
 }
